@@ -148,6 +148,8 @@ class CLIPGuidedStableDiffusion(DiffusionPipeline, StableDiffusionMixin):
 
         image_embeddings_clip = self.clip_model.get_image_features(image)
         image_embeddings_clip = image_embeddings_clip / image_embeddings_clip.norm(p=2, dim=-1, keepdim=True)
+        text_embeddings_clip = text_embeddings_clip.repeat(num_cutouts,1)
+
 
         if use_cutouts:
             dists = spherical_dist_loss(image_embeddings_clip, text_embeddings_clip)
@@ -232,7 +234,8 @@ class CLIPGuidedStableDiffusion(DiffusionPipeline, StableDiffusionMixin):
             uncond_input = self.tokenizer([""], padding="max_length", max_length=max_length, return_tensors="pt")
             uncond_embeddings = self.text_encoder(uncond_input.input_ids.to(self.device))[0]
             # duplicate unconditional embeddings for each generation per prompt
-            uncond_embeddings = uncond_embeddings.repeat_interleave(num_images_per_prompt, dim=0)
+            # uncond_embeddings = uncond_embeddings.repeat_interleave(num_images_per_prompt, dim=0) # origin
+            uncond_embeddings = uncond_embeddings.repeat_interleave(batch_size, dim=0)
 
             # For classifier free guidance, we need to do two forward passes.
             # Here we concatenate the unconditional and text embeddings into a single batch
